@@ -38,9 +38,15 @@ class BufferedWrapper(object):
 
 
 def load_img(path, target_size):
-    """Load image. target_size is specified as (height, width, channels)
-    where channels == 1 means grayscale. uint8 image returned."""
+    """
+    Load image. target_size is specified as (height, width, channels)
+    where channels == 1 means grayscale. uint8 image returned.
+
+    返回数据形状 (h, w, c)
+    """
     img = PIL.Image.open(path)
+    # print(path)
+    # img.show()
     grayscale = target_size[2] == 1
     if grayscale:
         if img.mode != 'L':
@@ -51,7 +57,7 @@ def load_img(path, target_size):
     wh_tuple = (target_size[1], target_size[0])
     if img.size != wh_tuple:
         img = img.resize(wh_tuple, resample = PIL.Image.BILINEAR)
-
+    # img.show()
     x = np.asarray(img, dtype = "uint8")
     if len(x.shape) == 2:
         x = np.expand_dims(x, -1)
@@ -142,7 +148,7 @@ class FaceDataset(data.Dataset):
         self.train = train
         self.root_dir = root_dir
         self.img_list = img_list
-        self.labels, self.paths = get_list(self.root_dir, self.img_list)
+        self.labels, self.paths = get_list(self.root_dir, self.img_list)        # 获取图片的关键点坐标、全路径
         self.sigma = sigma
         self.input_dim_b = input_dim_b
         corr_list = [0,32,1,31,2,30,3,29,4,28,5,27,6,26,7,25,8,24,9,23,10,22,11,21,12,20,13,19,14,18,15,17,33,46,34,45,35,44,36,43,37,42,38,50,39,49,40,48,41,47,55,59,56,58,60,72,61,71,62,70,63,69,64,68,65,75,66,74,67,73,76,82,77,81,78,80,88,92,89,91,95,93,87,83,86,84,96,97]
@@ -153,17 +159,17 @@ class FaceDataset(data.Dataset):
         inputs = []
         inputs_transform = []
         path = self.paths[index]
+        print("img_path:\t", path)
         img = load_img(path, target_size = [384,384,3])
+
         label = self.labels[index]
         label = np.asarray(label).reshape(-1,2)
         inputs = []
         inputs.append(img)
-        inputs.append(label)
-        inputs_transform = self.transform(*inputs)
-        img = inputs_transform[0].transpose((2,0,1))
-        #print(img.shape)
-        img = preprocess(img)
-        #print(img.shape)
+        inputs.append(label)                                #
+        inputs_transform = self.transform(*inputs)          # 做仿射变换，numpy形式的图像，98个关键点. 作用是什么？
+        img = inputs_transform[0].transpose((2,0,1))        # (c, h, w)
+        img = preprocess(img)                               # 减均值，归一化，并cast到numpy.float32
         landmark = inputs_transform[1]
 
         if self.input_dim_b == 45:

@@ -35,6 +35,12 @@ def make_dataset(dir):
 
 
 def get_list(dir, label_file):
+    """
+
+    @param dir:
+    @param label_file:  文件中每一行对应一个图像，98个关键点 + 图像名称
+    @return:
+    """
     labels = []
     images = []
     fh = open(label_file)
@@ -42,7 +48,7 @@ def get_list(dir, label_file):
         item = line.split()
         path = os.path.join(dir, item.pop(-1))
         images.append(path)
-        labels.append(tuple([float(v) for v in item]))
+        labels.append(tuple([float(v) for v in item]))          # 包含98 *2个浮点数
     return labels, images
 
 

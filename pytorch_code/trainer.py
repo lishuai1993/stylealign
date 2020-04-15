@@ -14,7 +14,7 @@ class FACE_Trainer(nn.Module):
         super(FACE_Trainer, self).__init__()
         lr = hyperparameters['lr']
         # Initiate the networks
-        if hyperparameters['net_version'] == 'v2' and hyperparameters['crop_image_height'] == 128:
+        if hyperparameters['net_version'] == 'v2' and hyperparameters['crop_image_height'] == 128:      # 初始化网络
             self.gen = NetV2_128x128(hyperparameters['input_dim_a'], hyperparameters['input_dim_b'], hyperparameters['input_dim_a'])
         self.instancenorm = nn.InstanceNorm2d(512, affine=False)
 
@@ -23,12 +23,12 @@ class FACE_Trainer(nn.Module):
         beta2 = hyperparameters['beta2']
         gen_params = list(self.gen.parameters())
         self.gen_opt = torch.optim.Adam([p for p in gen_params if p.requires_grad],
-                                        lr=lr, betas=(beta1, beta2), weight_decay=hyperparameters['weight_decay'])
-        self.gen_scheduler = get_scheduler(self.gen_opt, hyperparameters)
-        self.l1loss = nn.L1Loss(size_average=True)
+                                        lr=lr, betas=(beta1, beta2), weight_decay=hyperparameters['weight_decay'])      # 确定网络中参数的优化参数，学习率、权重衰减
+        self.gen_scheduler = get_scheduler(self.gen_opt, hyperparameters)       # 确定优化器中参数的更新设置，每100000步衰减一次学习率
+        self.l1loss = nn.L1Loss(size_average=True)                              # 确定loss
 
         # Network weight initialization
-        self.apply(weights_init(hyperparameters['init']))
+        self.apply(weights_init(hyperparameters['init']))                       # 权重初始化
 
         # Load VGG model if needed
         if 'vgg_w' in hyperparameters.keys() and hyperparameters['vgg_w'] > 0:
@@ -57,7 +57,7 @@ class FACE_Trainer(nn.Module):
         kl_loss = torch.mean(kl_loss)
         return kl_loss
 
-    def gen_update(self, x, y, hyperparameters):
+    def gen_update(self, x, y, hyperparameters):    # 输入训练数据，网络给出输出，计算loss，根据梯度，更新网络权重参数
         self.gen_opt.zero_grad()
 
         output = self.gen(x, y)
@@ -138,5 +138,5 @@ class FACE_Trainer(nn.Module):
         # Save generators, and optimizers
         gen_name = os.path.join(snapshot_dir, 'gen_%08d.pt' % (iterations + 1))
         opt_name = os.path.join(snapshot_dir, 'optimizer.pt')
-        torch.save({'gen_weight': self.gen.state_dict()}, gen_name)
+        torch.save({'gen_weight': self.gen.state_dict()}, gen_name)         # 在加载的过程中，需要先初始化网络结构和参数，然后替换其中的state_dict()
         torch.save({'gen': self.gen_opt.state_dict()}, opt_name)

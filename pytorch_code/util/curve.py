@@ -604,6 +604,15 @@ def points_to_heatmap_98pt(points, heatmap_num, heatmap_size, label_size, sigma)
 
 
 def points_to_landmark_map(points, heatmap_num, heatmap_size, label_size, sigma):
+  """
+
+  @param points:
+  @param heatmap_num:
+  @param heatmap_size:
+  @param label_size:
+  @param sigma:               控制的是高斯的范围，因为存在98个关键点，每一个关键点仅在一定的区域范围内生成高斯分布
+  @return:
+  """
   # set heatmap_num to 1 to save memeory
   # assert(heatmap_num == 1)
 
@@ -612,13 +621,14 @@ def points_to_landmark_map(points, heatmap_num, heatmap_size, label_size, sigma)
     points[i] *= (float(heatmap_size) / float(label_size))
 
   # heatmap generation
-  heatmap = np.zeros((heatmap_size,heatmap_size,heatmap_num))
+  heatmap = np.zeros((heatmap_size,heatmap_size,heatmap_num))             # 与设定的形状128*128相同
 
-  for i in range(len(points)):
+  for i in range(len(points)):                                            # points \in 98
     pt = points[i]
     # Check that any part of the gaussian is in-bounds
     ul = [int(pt[0] - 3 * sigma), int(pt[1] - 3 * sigma)]
     br = [int(pt[0] + 3 * sigma + 1), int(pt[1] + 3 * sigma + 1)]
+    print(ul, '\n\n', br)
     if (ul[0] >= heatmap.shape[1] or ul[1] >= heatmap.shape[0] or
             br[0] < 0 or br[1] < 0):
       # If not, just continue
@@ -626,19 +636,21 @@ def points_to_landmark_map(points, heatmap_num, heatmap_size, label_size, sigma)
 
     # Generate gaussian
     size = 6 * sigma + 1
-    x = np.arange(0, size, 1, float)
+    x = np.arange(0, size, 1, float)                                          # 长度为 7
     y = x[:, np.newaxis]
-    x0 = y0 = size // 2
+    x0 = y0 = size // 2                                                       # 为什么这个点不是关键点的坐标
     # The gaussian is not normalized, we want the center value to equal 1
-    g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
+    g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))          # 在加运算的过程中，自动进行boardcast。完成gaussion
 
 
     # Usable gaussian range
-    g_x = max(0, -ul[0]), min(br[0], heatmap.shape[1]) - ul[0]
+    g_x = max(0, -ul[0]), min(br[0], heatmap.shape[1]) - ul[0]                # 高斯分布范围的 x起点、x方向上的范围
     g_y = max(0, -ul[1]), min(br[1], heatmap.shape[0]) - ul[1]
+    print(g_x, '\t', g_y)
     # Image range
-    heatmap_x = max(0, ul[0]), min(br[0], heatmap.shape[1])
+    heatmap_x = max(0, ul[0]), min(br[0], heatmap.shape[1])                   # 分布两端的范围
     heatmap_y = max(0, ul[1]), min(br[1], heatmap.shape[0])
+    print(heatmap_x, '\t', heatmap_y)
 
     if heatmap_num == 1:
       for j in range(heatmap_x[1]-heatmap_x[0]):
@@ -651,3 +663,35 @@ def points_to_landmark_map(points, heatmap_num, heatmap_size, label_size, sigma)
 
 
   return heatmap
+
+
+# import PIL.Image as Image
+# points = np.array([[10, 10]], dtype=np.float)
+# sigma = 1
+# result = points_to_landmark_map(points, 1, 100, 100, sigma)
+# result = result.clip(0, 255)
+# result.dtype = np.uint8
+# # print(result[40:60, 50:70, 0:3].shape)
+# Image.fromarray(result[..., 0:3]).save('./temp.jpg')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

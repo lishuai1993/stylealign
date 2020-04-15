@@ -924,7 +924,11 @@ class NetV2_128x128(nn.Module):
         self.struc_conv_1x1_level_1_block_1_ = nn.Sequential(nn.Conv2d(1536, 1024, kernel_size=1, stride=1, padding=0, bias=True))
 
     def forward(self, x, y):
-
+        """
+        @param x:   input image
+        @param y:   heatmap of facial landmark of input image
+        @return:    输入图像在迁移风格后结果
+        """
         ## appearance encoder pass
         # endoer
         x0 = self.app_enc_pre_(x) # size: (n,64,64,64)
@@ -993,7 +997,10 @@ class NetV2_128x128(nn.Module):
 
     def latent_sample(self, mean):
         stddev = 1.0
-        eps = Variable(torch.randn(mean.size()).cuda(mean.data.get_device()))
+        if mean.data.get_device() >= 0:
+            eps = Variable(torch.randn(mean.size()).cuda(mean.data.get_device()))
+        else:
+            eps = Variable(torch.randn(mean.size()))
         return mean + stddev * eps
 
 

@@ -2,7 +2,8 @@
 Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
-from torch.utils.serialization import load_lua
+# from torch.utils.serialization import torchfile_load
+import torchfile
 from torch.utils.data import DataLoader
 from networks import Vgg16, Vgg19
 from torch.autograd import Variable
@@ -142,7 +143,8 @@ def get_test_loader_face(conf):
 
 def get_config(config):
     with open(config, 'r') as stream:
-        return yaml.load(stream)
+
+        return yaml.load(stream, Loader = yaml.FullLoader)
 
 
 def eformat(f, prec):
@@ -164,7 +166,12 @@ def postprocess(x):
     return x
 
 def tile(X, rows, cols):
-    """Tile images for display."""
+    """
+    Tile images for display.
+    X ::= (b, w, h, c),
+        b ::= 81
+    """
+
     tiling = np.zeros((int(rows * X.shape[1]), int(cols * X.shape[2]), int(X.shape[3])), dtype = X.dtype)
     for i in range(rows):
         for j in range(cols):
@@ -179,14 +186,14 @@ def tile(X, rows, cols):
 
 def plot_batch(X, out_path):
     """Save batch of images tiled."""
-    n_channels = X.shape[3]
+    n_channels = X.shape[3]         # 为什么此时会大于3
     if n_channels > 3:
         X = X[:,:,:,np.random.choice(n_channels, size = 3)]
-    X = postprocess(X)
-    rc = math.sqrt(X.shape[0])
-    rows = cols = int(math.ceil(rc))
-    canvas = tile(X, rows, cols)
-    canvas = np.squeeze(canvas)
+    X = postprocess(X)              # 将X的值映射到 0-255的范围内，同时转换成正整数
+    rc = math.sqrt(X.shape[0])      #
+    rows = cols = int(math.ceil(rc))           # 9
+    canvas = tile(X, rows, cols)    #
+    canvas = np.squeeze(canvas)     # 转换为 3 维
     PIL.Image.fromarray(canvas).save(out_path)
 
 def __write_images(image_outputs, display_image_num, file_name):
@@ -305,7 +312,7 @@ def load_vgg16(model_dir):
     if not os.path.exists(os.path.join(model_dir, 'vgg16.weight')):
         if not os.path.exists(os.path.join(model_dir, 'vgg16.t7')):
             os.system('wget https://www.dropbox.com/s/76l3rt4kyi3s8x7/vgg16.t7?dl=1 -O ' + os.path.join(model_dir, 'vgg16.t7'))
-        vgglua = load_lua(os.path.join(model_dir, 'vgg16.t7'))
+        vgglua = torchfile_load(os.path.join(model_dir, 'vgg16.t7'))
         vgg = Vgg16()
         for (src, dst) in zip(vgglua.parameters()[0], vgg.parameters()):
             dst.data[:] = src
