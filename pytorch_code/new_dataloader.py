@@ -14,6 +14,7 @@ from Data.image_folder import make_dataset, get_list
 from PIL import Image
 from transfroms.affine_transforms import AffineCompose
 import sys
+import cv2
 
 
 
@@ -37,6 +38,70 @@ class BufferedWrapper(object):
         return result
 
 
+def load_img_land(path, label, target_size):
+    """
+    Load image. target_size is specified as (height, width, channels)
+    where channels == 1 means grayscale. uint8 image returned.
+
+    返回数据形状 (h, w, c)
+    """
+    img = PIL.Image.open(path)
+    # print(path)
+    # img.show()
+    grayscale = target_size[2] == 1
+    if grayscale:
+        if img.mode != 'L':
+            img = img.convert('L')
+    else:
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+
+    label = np.asarray(label).reshape(-1,2)
+    ul = np.min(label, axis=0)
+    br = np.max(label, axis=0)
+
+    w = br[0] - ul[0]
+    h = br[1] - ul[1]
+    uls = (ul - np.array([w * 0.1, h * 0.1])).astype(np.int)
+    brs = (br + np.array([w * 0.1, h * 0.1])).astype(np.int)
+
+    w, h = brs - uls
+    if h > w:
+        diff = h - w
+        uls[0] = uls[0] - math.floor(diff / 2)
+        brs[0] = brs[0] + math.ceil(diff / 2)
+    else:
+        diff = w - h
+        uls[1] = uls[1] - math.floor(diff / 2)
+        brs[1] = brs[1] + math.floor(diff / 2)
+
+    cv2.imshow("yuant", np.array(img)[uls[0]:brs[0], uls[1]:brs[1], :])
+    cv2.waitKey(0)
+
+    factor = (brs[0] - uls[0]) / target_size[0]
+    land = (label - uls[0]) / factor
+
+    img = np.array(img)[uls[0]:brs[0], uls[1]:brs[1], :]
+    print("=====\t", img.shape)
+    cv2.imwrite("xxx.jpg", img)
+    img_clone = cv2.imread("xxx.jpg")
+
+    for (x, y) in land.astype(np.int32):
+        cv2.circle(img_clone, (x, y), 1, (255, 0, 0), -1)
+    cv2.imshow("xx.jpg", img_clone)
+    cv2.waitKey(0)
+
+    wh_tuple = (target_size[1], target_size[0])
+    img = Image.fromarray(img)
+    if img.size != wh_tuple:
+        img = img.resize(wh_tuple, resample = PIL.Image.BILINEAR)
+    # img.show()
+    x = np.asarray(img, dtype = "uint8")
+    if len(x.shape) == 2:
+        x = np.expand_dims(x, -1)
+
+    return x, land
+
 def load_img(path, target_size):
     """
     Load image. target_size is specified as (height, width, channels)
@@ -57,7 +122,6 @@ def load_img(path, target_size):
     wh_tuple = (target_size[1], target_size[0])
     if img.size != wh_tuple:
         img = img.resize(wh_tuple, resample = PIL.Image.BILINEAR)
-    # img.show()
     x = np.asarray(img, dtype = "uint8")
     if len(x.shape) == 2:
         x = np.expand_dims(x, -1)
@@ -160,9 +224,11 @@ class FaceDataset(data.Dataset):
         inputs_transform = []
         path = self.paths[index]
         print("img_path:\t", path)
-        img = load_img(path, target_size = [384,384,3])
 
         label = self.labels[index]
+        img = load_img(path, target_size = [384,384,3])
+
+        # label = self.labels[index]
         label = np.asarray(label).reshape(-1,2)
         inputs = []
         inputs.append(img)
