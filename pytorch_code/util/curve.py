@@ -628,7 +628,7 @@ def points_to_landmark_map(points, heatmap_num, heatmap_size, label_size, sigma)
     # Check that any part of the gaussian is in-bounds
     ul = [int(pt[0] - 3 * sigma), int(pt[1] - 3 * sigma)]
     br = [int(pt[0] + 3 * sigma + 1), int(pt[1] + 3 * sigma + 1)]
-    print(ul, '\n\n', br)
+    # print(ul, '\n\n', br)
     if (ul[0] >= heatmap.shape[1] or ul[1] >= heatmap.shape[0] or
             br[0] < 0 or br[1] < 0):
       # If not, just continue
@@ -646,11 +646,11 @@ def points_to_landmark_map(points, heatmap_num, heatmap_size, label_size, sigma)
     # Usable gaussian range
     g_x = max(0, -ul[0]), min(br[0], heatmap.shape[1]) - ul[0]                # 高斯分布范围的 x起点、x方向上的范围
     g_y = max(0, -ul[1]), min(br[1], heatmap.shape[0]) - ul[1]
-    print(g_x, '\t', g_y)
+    # print(g_x, '\t', g_y)
     # Image range
     heatmap_x = max(0, ul[0]), min(br[0], heatmap.shape[1])                   # 分布两端的范围
     heatmap_y = max(0, ul[1]), min(br[1], heatmap.shape[0])
-    print(heatmap_x, '\t', heatmap_y)
+    # print(heatmap_x, '\t', heatmap_y)
 
     if heatmap_num == 1:
       for j in range(heatmap_x[1]-heatmap_x[0]):

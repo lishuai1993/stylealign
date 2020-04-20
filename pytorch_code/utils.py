@@ -19,6 +19,8 @@ import numpy as np
 import torch.nn.init as init
 import time
 import PIL
+import cv2
+
 
 from new_dataloader import FaceDataset
 # Methods
@@ -192,9 +194,13 @@ def plot_batch(X, out_path):
     X = postprocess(X)              # 将X的值映射到 0-255的范围内，同时转换成正整数
     rc = math.sqrt(X.shape[0])      #
     rows = cols = int(math.ceil(rc))           # 9
-    canvas = tile(X, rows, cols)    #
+    canvas = tile(X, rows, cols)
     canvas = np.squeeze(canvas)     # 转换为 3 维
     PIL.Image.fromarray(canvas).save(out_path)
+    img = cv2.imread(out_path)
+    cv2.imshow("result", img)
+    cv2.waitKey(0)
+
 
 def __write_images(image_outputs, display_image_num, file_name):
     image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
